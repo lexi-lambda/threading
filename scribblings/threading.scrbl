@@ -6,7 +6,7 @@
           scribble/eval)
 
 @(define threading-eval
-   (make-eval-factory '(alexis/util/threading
+   (make-eval-factory '(threading
                         racket/function
                         racket/list
                         racket/math)))
