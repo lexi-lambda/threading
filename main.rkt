@@ -2,6 +2,7 @@
 
 (require (for-syntax racket/base
                      racket/list
+                     racket/syntax
                      syntax/parse))
 
 (provide ~> ~>> and~> and~>> _
@@ -11,6 +12,11 @@
                      [lambda~>* λ~>*] [lambda~>>* λ~>>*]
                      [lambda-and~> λ-and~>] [lambda-and~>> λ-and~>>]
                      [lambda-and~>* λ-and~>*] [lambda-and~>>* λ-and~>>*]))
+
+; Adjusts the lexical context of the outermost piece of a syntax object;
+; i.e. changes the context of a syntax pair but not its contents.
+(define-for-syntax (adjust-outer-context ctx stx [srcloc #f])
+  (datum->syntax ctx (syntax-e stx) srcloc))
 
 (begin-for-syntax
   (define-syntax-class clause
@@ -37,43 +43,47 @@
   (values
    (syntax-parser
      [(_ ex:expr) #'ex]
-     [(_ ex:expr cl:clause remaining:clause ...)
+     [(arrow ex:expr cl:clause remaining:clause ...)
       (define call (syntax->list #'cl.call))
       (define-values (pre post)
         (split-at call (add1 (or (attribute cl.insertion-point) 0))))
-      (with-syntax ([(pre ...) pre]
-                    [(post ...) post])
-        #'(~> (pre ... ex post ...) remaining ...))])
+      (with-syntax* ([(pre ...) pre]
+                     [(post ...) post]
+                     [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
+        #'(~> app/ctx remaining ...))])
    (syntax-parser
      [(_ ex:expr) #'ex]
-     [(_ ex:expr cl:clause remaining:clause ...)
+     [(arrow ex:expr cl:clause remaining:clause ...)
       (define call (syntax->list #'cl.call))
       (define-values (pre post)
         (split-at call (add1 (or (attribute cl.insertion-point)
                                  (sub1 (length call))))))
-      (with-syntax ([(pre ...) pre]
-                    [(post ...) post])
-        #'(~>> (pre ... ex post ...) remaining ...))])
+      (with-syntax* ([(pre ...) pre]
+                     [(post ...) post]
+                     [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
+        #'(~>> app/ctx remaining ...))])
    (syntax-parser
      [(_ ex:expr) #'ex]
-     [(_ ex:expr cl:clause remaining:clause ...)
+     [(arrow ex:expr cl:clause remaining:clause ...)
       (define call (syntax->list #'cl.call))
       (define-values (pre post)
         (split-at call (add1 (or (attribute cl.insertion-point) 0))))
-      (with-syntax ([(pre ...) pre]
-                    [(post ...) post])
-        #'(let ([v (pre ... ex post ...)])
+      (with-syntax* ([(pre ...) pre]
+                     [(post ...) post]
+                     [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
+        #'(let ([v app/ctx])
             (and v (and~> v remaining ...))))])
    (syntax-parser
      [(_ ex:expr) #'ex]
-     [(_ ex:expr cl:clause remaining:clause ...)
+     [(arrow ex:expr cl:clause remaining:clause ...)
       (define call (syntax->list #'cl.call))
       (define-values (pre post)
         (split-at call (add1 (or (attribute cl.insertion-point)
                                  (sub1 (length call))))))
-      (with-syntax ([(pre ...) pre]
-                    [(post ...) post])
-        #'(let ([v (pre ... ex post ...)])
+      (with-syntax* ([(pre ...) pre]
+                     [(post ...) post]
+                     [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
+        #'(let ([v app/ctx])
             (and v (and~>> v remaining ...))))])))
 
 (define-syntax-rule (lambda~> . body)
@@ -131,4 +141,20 @@
    "Don't thread into quoted forms"
 
    (check-equal? (syntax->datum (expand-syntax-to-top-form #'(~> b 'a))) '('a b))
-   (check-equal? (syntax->datum (expand-syntax-to-top-form #'(~>> b 'a))) '('a b))))
+   (check-equal? (syntax->datum (expand-syntax-to-top-form #'(~>> b 'a))) '('a b)))
+
+  (test-case
+   "Use the #%app from the surrounding lexical context"
+
+   (check-equal? (let-syntax ([#%app (syntax-rules () [(_ . rest) (list . rest)])])
+                   (~> 1 (2)))
+                 '(2 1))
+   (check-equal? (let-syntax ([#%app (syntax-rules () [(_ . rest) (list . rest)])])
+                   (~>> 1 (2)))
+                 '(2 1))
+   (check-equal? (let-syntax ([#%app (syntax-rules () [(_ . rest) (list . rest)])])
+                   (and~> 1 (2)))
+                 '(2 1))
+   (check-equal? (let-syntax ([#%app (syntax-rules () [(_ . rest) (list . rest)])])
+                   (and~>> 1 (2)))
+                 '(2 1))))
