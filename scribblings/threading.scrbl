@@ -246,6 +246,11 @@ as a list instead of just taking a single argument:
 @racket[hole-marker], it is transformed into a function application with the @racket[hole-marker]
 placed immediately after the @racket[fn-expr].
 
+As a special case, clauses of the form @racket['datum] are treated as if they were @racket[('datum)]
+so the threaded value is inserted @emph{outside} the @racket[quote] form. This isn't useful (or
+harmful) in the Racket language, but it may be be useful in other languages with a modified
+@racket[#%app].
+
 Once the initial transformation has been completed, the @racket[expr] is threaded through the clauses
 by nesting it within each clause, replacing the hole marker.
 

@@ -14,11 +14,15 @@
 
 (begin-for-syntax
   (define-syntax-class clause
-    #:literals (_)
+    #:literals (_ quote)
     #:attributes (call insertion-point)
     (pattern
      id:id
      #:with call #'(id)
+     #:attr insertion-point 0)
+    (pattern
+     'term
+     #:with call #'('term)
      #:attr insertion-point 0)
     (pattern
      (head:expr pre ... _ post ...)
@@ -121,4 +125,10 @@
    (check-equal? (and~>> '(1 3 5) (findf odd?) add1) 2)
 
    (check-equal? (and~> '(1 3 5) (findf even? _) add1) #f)
-   (check-equal? (and~>> '(1 3 5) (findf even?) add1) #f)))
+   (check-equal? (and~>> '(1 3 5) (findf even?) add1) #f))
+
+  (test-case
+   "Don't thread into quoted forms"
+
+   (check-equal? (syntax->datum (expand-syntax-to-top-form #'(~> b 'a))) '('a b))
+   (check-equal? (syntax->datum (expand-syntax-to-top-form #'(~>> b 'a))) '('a b))))
