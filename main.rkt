@@ -50,7 +50,7 @@
       (with-syntax* ([(pre ...) pre]
                      [(post ...) post]
                      [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
-        #'(~> app/ctx remaining ...))])
+        #'(arrow app/ctx remaining ...))])
    (syntax-parser
      [(_ ex:expr) #'ex]
      [(arrow ex:expr cl:clause remaining:clause ...)
@@ -61,7 +61,7 @@
       (with-syntax* ([(pre ...) pre]
                      [(post ...) post]
                      [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
-        #'(~>> app/ctx remaining ...))])
+        #'(arrow app/ctx remaining ...))])
    (syntax-parser
      [(_ ex:expr) #'ex]
      [(arrow ex:expr cl:clause remaining:clause ...)
@@ -72,7 +72,7 @@
                      [(post ...) post]
                      [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
         #'(let ([v app/ctx])
-            (and v (and~> v remaining ...))))])
+            (and v (arrow v remaining ...))))])
    (syntax-parser
      [(_ ex:expr) #'ex]
      [(arrow ex:expr cl:clause remaining:clause ...)
@@ -84,7 +84,7 @@
                      [(post ...) post]
                      [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
         #'(let ([v app/ctx])
-            (and v (and~>> v remaining ...))))])))
+            (and v (arrow v remaining ...))))])))
 
 (define-syntax-rule (lambda~> . body)
   (lambda (x) (~> x . body)))
@@ -147,14 +147,14 @@
    "Use the #%app from the surrounding lexical context"
 
    (check-equal? (let-syntax ([#%app (syntax-rules () [(_ . rest) (list . rest)])])
-                   (~> 1 (2)))
-                 '(2 1))
+                   (~> 1 (2) (3)))
+                 '(3 (2 1)))
    (check-equal? (let-syntax ([#%app (syntax-rules () [(_ . rest) (list . rest)])])
-                   (~>> 1 (2)))
-                 '(2 1))
+                   (~>> 1 (2) (3)))
+                 '(3 (2 1)))
    (check-equal? (let-syntax ([#%app (syntax-rules () [(_ . rest) (list . rest)])])
-                   (and~> 1 (2)))
-                 '(2 1))
+                   (and~> 1 (2) (3)))
+                 '(3 (2 1)))
    (check-equal? (let-syntax ([#%app (syntax-rules () [(_ . rest) (list . rest)])])
-                   (and~>> 1 (2)))
-                 '(2 1))))
+                   (and~>> 1 (2) (3)))
+                 '(3 (2 1)))))
