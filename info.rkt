@@ -1,4 +1,4 @@
-#lang info
+#lang setup/infotab
 
 (define collection "threading")
 (define version "1.0.0")
@@ -6,9 +6,7 @@
 (define deps
   '("base"))
 (define build-deps
-  '("cover"
-    "cover-coveralls"
-    "racket-doc"
+  '("racket-doc"
     "rackunit-lib"
     "scribble-lib"))
 

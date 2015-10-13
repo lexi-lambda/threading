@@ -4,12 +4,18 @@ sudo: false
 
 env:
   global:
-    - GH_REF: 'github.com/lexi-lambda/threading.git'
-    - secure: "jqgzaSj2iT6ExWhbvkw/I9NoMwOmkqtovQGgN2rRI6RuI++0/pfyj0wlp/hEZTevERyni5gavueQt2mzlIWcf//m+KUWT+rmRlYQCwhjvbsFyANROYcXrBGAWx88glgIz1MWZnr3Eqm7I1dImAG/PXLlCSjJQrGOy0ydWeDryQnSnTFZCdJ7/SvJq45W8CgRMBTWfmE4NM3BrXE4RHiCFOU44wYuIgvQBe7Jz6LKiIImEnmBx95hkiPvInRGzwWAmabTBnpPGErqNk/vRdcFwDGFGREdJOA/9GR9Es4eN9eqJpya3t/d4Pgg0yljojyLtbBcn5pIf5ec/C7QMpmsx4+XfV7QBRC5pDMRDSs7HfFMKBeWiFpmMDRP3iLHhDG2aD30qXmjYiRNECWotSjGOHMCcfh75j8QR3UV+gVyN5OSeuDGVEhHM8LbqtOz9hHENabk1waMD+ZK8Fl9UFKamrJ4IF/ahP/04fLj1DFToge8RwyhcyNJtqKf+qilJ8/J5cajO16NsOQBEYPE3Jce/O3jeSa/MsPJnT2nq5E5RN/ezaEjTHn57aBUHncNDqCPPMBmWIqDyUm8wFxRlVQWXgZyDCeMGk4Ps7aRQS5f787ewFfPK6H9VG5KFEMg7ueeMqM6gikaBKHhqG38elJqhRbEsFgeIYC7OGeQerNsHh4="
     - RACKET_DIR: '~/racket'
   matrix:
-    - RACKET_VERSION: 6.2
-    - RACKET_VERSION: HEAD
+    - RACKET_VERSION: 5.3.2
+    - RACKET_VERSION: 5.3.4
+    - RACKET_VERSION: 5.3.5
+    - RACKET_VERSION: 5.3.6
+    - RACKET_VERSION: 5.92
+    - RACKET_VERSION: 5.93
+    - RACKET_VERSION: 5.3.2
+    - RACKET_VERSION: 6.0
+    - RACKET_VERSION: 6.0.1
+    - RACKET_VERSION: 6.1
 
 before_install:
   - git clone https://github.com/greghendershott/travis-racket.git
@@ -17,11 +23,7 @@ before_install:
   - export PATH="${RACKET_DIR}/bin:${PATH}"
 
 install:
-  - raco pkg install -in threading --auto --link $TRAVIS_BUILD_DIR
+  - raco pkg install -in threading --deps search-auto --link $TRAVIS_BUILD_DIR
 
 script:
   - raco test -p threading
-  - raco cover -bf coveralls -d $TRAVIS_BUILD_DIR/coverage -p threading
-
-after_success:
-- bash deploy-docs.sh

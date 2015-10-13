@@ -20,7 +20,7 @@
 
 (begin-for-syntax
   (define-syntax-class clause
-    #:literals (_ quote)
+    #:literals (quote)
     #:attributes (call insertion-point)
     (pattern
      id:id
@@ -31,7 +31,7 @@
      #:with call #'('term)
      #:attr insertion-point 0)
     (pattern
-     (head:expr pre ... _ post ...)
+     (head:expr pre ... (~literal _) post ...)
      #:with call #'(head pre ... post ...)
      #:attr insertion-point (length (syntax->list #'(pre ...))))
     (pattern
