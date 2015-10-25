@@ -70,9 +70,9 @@
         (split-at call (add1 (or (attribute cl.insertion-point) 0))))
       (with-syntax* ([(pre ...) pre]
                      [(post ...) post]
-                     [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
-        #'(let ([v app/ctx])
-            (and v (arrow v remaining ...))))])
+                     [app/ctx (adjust-outer-context #'arrow #'(pre ... v post ...) #'cl)])
+        #'(let ([v ex])
+            (and v (arrow app/ctx remaining ...))))])
    (syntax-parser
      [(_ ex:expr) #'ex]
      [(arrow ex:expr cl:clause remaining:clause ...)
@@ -82,9 +82,9 @@
                                  (sub1 (length call))))))
       (with-syntax* ([(pre ...) pre]
                      [(post ...) post]
-                     [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
-        #'(let ([v app/ctx])
-            (and v (arrow v remaining ...))))])))
+                     [app/ctx (adjust-outer-context #'arrow #'(pre ... v post ...) #'cl)])
+        #'(let ([v ex])
+            (and v (arrow app/ctx remaining ...))))])))
 
 (define-syntax-rule (lambda~> . body)
   (lambda (x) (~> x . body)))
@@ -130,6 +130,9 @@
    
    (check-equal? (and~> 'x) 'x)
    (check-equal? (and~>> 'x) 'x)
+
+   (check-equal? (and~> #f string->number) #f)
+   (check-equal? (and~>> #f string->number) #f)
 
    (check-equal? (and~> '(1 3 5) (findf odd? _) add1) 2)
    (check-equal? (and~>> '(1 3 5) (findf odd?) add1) 2)
