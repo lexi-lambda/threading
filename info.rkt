@@ -6,9 +6,7 @@
 (define deps
   '("base"))
 (define build-deps
-  '("cover"
-    "cover-coveralls"
-    "racket-doc"
+  '("racket-doc"
     "rackunit-lib"
     "scribble-lib"))
 

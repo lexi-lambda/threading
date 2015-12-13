@@ -18,6 +18,7 @@ before_install:
 
 install:
   - raco pkg install -in threading --auto --link $TRAVIS_BUILD_DIR
+  - raco pkg install --auto cover cover-coveralls
 
 script:
   - raco test -p threading
