@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ev # exit with nonzero exit code if anything fails
 
-if [[ "$TRAVIS_BRANCH" != 'master' ]]; then
+if [[ "$RACKET_VERSION" != 'HEAD' || "$TRAVIS_PULL_REQUEST" != 'false' || "$TRAVIS_BRANCH" != 'master' ]]; then
   exit 0;
 fi
 
@@ -9,7 +9,7 @@ fi
 rm -rf docs || exit 0;
 
 # build the documentation files
-scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --html --dest ./docs ./scribblings/threading.scrbl
+scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --html --dest ./docs ./threading-doc/scribblings/threading.scrbl
 
 # go to the documentation directory and create a *new* Git repo
 cd docs

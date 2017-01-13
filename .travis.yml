@@ -1,7 +1,5 @@
 language: c
 
-sudo: false
-
 env:
   global:
     - GH_REF: 'github.com/lexi-lambda/threading.git'
@@ -9,6 +7,12 @@ env:
     - RACKET_DIR: '~/racket'
   matrix:
     - RACKET_VERSION: 6.2
+    - RACKET_VERSION: 6.2.1
+    - RACKET_VERSION: 6.3
+    - RACKET_VERSION: 6.4
+    - RACKET_VERSION: 6.5
+    - RACKET_VERSION: 6.6
+    - RACKET_VERSION: 6.7
     - RACKET_VERSION: HEAD
 
 before_install:
@@ -17,12 +21,15 @@ before_install:
   - export PATH="${RACKET_DIR}/bin:${PATH}"
 
 install:
-  - raco pkg install -in threading --auto --link $TRAVIS_BUILD_DIR
-  - raco pkg install --auto cover cover-coveralls
+  - raco pkg install -i --auto --link
+      $TRAVIS_BUILD_DIR/threading-doc
+      $TRAVIS_BUILD_DIR/threading-lib
+      $TRAVIS_BUILD_DIR/threading-test
+  - raco pkg install -i --auto cover cover-coveralls
 
 script:
-  - raco test -p threading
-  - raco cover -bf coveralls -d $TRAVIS_BUILD_DIR/coverage -p threading
+  - raco test -ep threading-lib threading-test
+  - raco cover -bf coveralls -d $TRAVIS_BUILD_DIR/coverage -p threading-lib threading-test
 
 after_success:
 - bash deploy-docs.sh
