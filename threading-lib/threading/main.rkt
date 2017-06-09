@@ -2,7 +2,6 @@
 
 (require (for-syntax racket/base
                      racket/list
-                     racket/syntax
                      syntax/parse))
 
 (provide ~> ~>> and~> and~>> _
@@ -44,47 +43,49 @@
    (syntax-parser
      [(_ ex:expr) #'ex]
      [(_ ex:expr cl:clause remaining:clause ...)
-      (define call (syntax->list #'cl.call))
-      (define-values (pre post)
-        (split-at call (add1 (or (attribute cl.insertion-point) 0))))
-      (with-syntax* ([(pre ...) pre]
-                     [(post ...) post]
-                     [app/ctx (adjust-outer-context this-syntax #'(pre ... ex post ...) #'cl)])
-        (adjust-outer-context this-syntax #'(~> app/ctx remaining ...) this-syntax))])
+      #:do [(define call (syntax->list #'cl.call))
+            (define-values (pre post)
+              (split-at call (add1 (or (attribute cl.insertion-point) 0))))]
+      #:with [pre ...] pre
+      #:with [post ...] post
+      #:with app/ctx (adjust-outer-context this-syntax #'(pre ... ex post ...) #'cl)
+      (adjust-outer-context this-syntax #'(~> app/ctx remaining ...) this-syntax)])
    (syntax-parser
      [(_ ex:expr) #'ex]
      [(_ ex:expr cl:clause remaining:clause ...)
-      (define call (syntax->list #'cl.call))
-      (define-values (pre post)
-        (split-at call (add1 (or (attribute cl.insertion-point)
-                                 (sub1 (length call))))))
-      (with-syntax* ([(pre ...) pre]
-                     [(post ...) post]
-                     [app/ctx (adjust-outer-context this-syntax #'(pre ... ex post ...) #'cl)])
-        (adjust-outer-context this-syntax #'(~>> app/ctx remaining ...) this-syntax))])
+      #:do [(define call (syntax->list #'cl.call))
+            (define-values (pre post)
+              (split-at call (add1 (or (attribute cl.insertion-point)
+                                       (sub1 (length call))))))]
+      #:with [pre ...] pre
+      #:with [post ...] post
+      #:with app/ctx (adjust-outer-context this-syntax #'(pre ... ex post ...) #'cl)
+      (adjust-outer-context this-syntax #'(~>> app/ctx remaining ...) this-syntax)])
    (syntax-parser
      [(_ ex:expr) #'ex]
      [(_ ex:expr cl:clause remaining:clause ...)
-      (define call (syntax->list #'cl.call))
-      (define-values (pre post)
-        (split-at call (add1 (or (attribute cl.insertion-point) 0))))
-      (with-syntax* ([(pre ...) pre]
-                     [(post ...) post]
-                     [app/ctx (adjust-outer-context this-syntax #'(pre ... v post ...) #'cl)])
-        #`(let ([v ex])
-            (and v #,(adjust-outer-context this-syntax #'(and~> app/ctx remaining ...) this-syntax))))])
+      #:do [(define call (syntax->list #'cl.call))
+            (define-values (pre post)
+              (split-at call (add1 (or (attribute cl.insertion-point) 0))))]
+      #:with [pre ...] pre
+      #:with [post ...] post
+      #:with app/ctx (adjust-outer-context this-syntax #'(pre ... v post ...) #'cl)
+      #:with body/ctx (adjust-outer-context this-syntax #'(and~> app/ctx remaining ...) this-syntax)
+      #'(let ([v ex])
+          (and v body/ctx))])
    (syntax-parser
      [(_ ex:expr) #'ex]
      [(_ ex:expr cl:clause remaining:clause ...)
-      (define call (syntax->list #'cl.call))
-      (define-values (pre post)
-        (split-at call (add1 (or (attribute cl.insertion-point)
-                                 (sub1 (length call))))))
-      (with-syntax* ([(pre ...) pre]
-                     [(post ...) post]
-                     [app/ctx (adjust-outer-context this-syntax #'(pre ... v post ...) #'cl)])
-        #`(let ([v ex])
-            (and v #,(adjust-outer-context this-syntax #'(and~>> app/ctx remaining ...) this-syntax))))])))
+      #:do [(define call (syntax->list #'cl.call))
+            (define-values (pre post)
+              (split-at call (add1 (or (attribute cl.insertion-point)
+                                       (sub1 (length call))))))]
+      #:with [pre ...] pre
+      #:with [post ...] post
+      #:with app/ctx (adjust-outer-context this-syntax #'(pre ... v post ...) #'cl)
+      #:with body/ctx (adjust-outer-context this-syntax #'(and~>> app/ctx remaining ...) this-syntax)
+      #'(let ([v ex])
+          (and v body/ctx))])))
 
 (define-syntax-rule (define-simple-macro (id . head) clause ... template)
   (define-syntax id
