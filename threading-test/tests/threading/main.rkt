@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require rackunit
+(require (prefix-in r: racket/base)
+         rackunit
          threading)
 
 (test-case
@@ -50,4 +51,16 @@
                '(3 (2 1)))
  (check-equal? (let-syntax ([#%app (syntax-rules () [(_ . rest) (list . rest)])])
                  (and~>> 1 (2) (3)))
-               '(3 (2 1))))
+               '(3 (2 1)))
+
+ (let ([->proc (λ (x) (if (symbol? x) (λ (hsh) (hash-ref hsh x)) x))]
+       [h (hasheq 'x (hasheq 'y 1))])
+   (let-syntax ([#%app (syntax-rules () [(_ x . rest) (r:#%app (->proc x) . rest)])])
+     (check-equal? (~> h 'x 'y) 1)
+     (check-equal? (~>> h 'x 'y) 1)
+     (check-equal? (and~> h 'x 'y) 1)
+     (check-equal? (and~>> h 'x 'y) 1)
+     (check-equal? ((λ~> 'x 'y) h) 1)
+     (check-equal? ((λ~>> 'x 'y) h) 1)
+     (check-equal? ((λ-and~> 'x 'y) h) 1)
+     (check-equal? ((λ-and~>> 'x 'y) h) 1))))

@@ -43,69 +43,82 @@
   (values
    (syntax-parser
      [(_ ex:expr) #'ex]
-     [(arrow ex:expr cl:clause remaining:clause ...)
+     [(_ ex:expr cl:clause remaining:clause ...)
       (define call (syntax->list #'cl.call))
       (define-values (pre post)
         (split-at call (add1 (or (attribute cl.insertion-point) 0))))
       (with-syntax* ([(pre ...) pre]
                      [(post ...) post]
-                     [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
-        #'(arrow app/ctx remaining ...))])
+                     [app/ctx (adjust-outer-context this-syntax #'(pre ... ex post ...) #'cl)])
+        (adjust-outer-context this-syntax #'(~> app/ctx remaining ...) this-syntax))])
    (syntax-parser
      [(_ ex:expr) #'ex]
-     [(arrow ex:expr cl:clause remaining:clause ...)
+     [(_ ex:expr cl:clause remaining:clause ...)
       (define call (syntax->list #'cl.call))
       (define-values (pre post)
         (split-at call (add1 (or (attribute cl.insertion-point)
                                  (sub1 (length call))))))
       (with-syntax* ([(pre ...) pre]
                      [(post ...) post]
-                     [app/ctx (adjust-outer-context #'arrow #'(pre ... ex post ...) #'cl)])
-        #'(arrow app/ctx remaining ...))])
+                     [app/ctx (adjust-outer-context this-syntax #'(pre ... ex post ...) #'cl)])
+        (adjust-outer-context this-syntax #'(~>> app/ctx remaining ...) this-syntax))])
    (syntax-parser
      [(_ ex:expr) #'ex]
-     [(arrow ex:expr cl:clause remaining:clause ...)
+     [(_ ex:expr cl:clause remaining:clause ...)
       (define call (syntax->list #'cl.call))
       (define-values (pre post)
         (split-at call (add1 (or (attribute cl.insertion-point) 0))))
       (with-syntax* ([(pre ...) pre]
                      [(post ...) post]
-                     [app/ctx (adjust-outer-context #'arrow #'(pre ... v post ...) #'cl)])
-        #'(let ([v ex])
-            (and v (arrow app/ctx remaining ...))))])
+                     [app/ctx (adjust-outer-context this-syntax #'(pre ... v post ...) #'cl)])
+        #`(let ([v ex])
+            (and v #,(adjust-outer-context this-syntax #'(and~> app/ctx remaining ...) this-syntax))))])
    (syntax-parser
      [(_ ex:expr) #'ex]
-     [(arrow ex:expr cl:clause remaining:clause ...)
+     [(_ ex:expr cl:clause remaining:clause ...)
       (define call (syntax->list #'cl.call))
       (define-values (pre post)
         (split-at call (add1 (or (attribute cl.insertion-point)
                                  (sub1 (length call))))))
       (with-syntax* ([(pre ...) pre]
                      [(post ...) post]
-                     [app/ctx (adjust-outer-context #'arrow #'(pre ... v post ...) #'cl)])
-        #'(let ([v ex])
-            (and v (arrow app/ctx remaining ...))))])))
+                     [app/ctx (adjust-outer-context this-syntax #'(pre ... v post ...) #'cl)])
+        #`(let ([v ex])
+            (and v #,(adjust-outer-context this-syntax #'(and~>> app/ctx remaining ...) this-syntax))))])))
 
-(define-syntax-rule (lambda~> . body)
-  (lambda (x) (~> x . body)))
+(define-syntax-rule (define-simple-macro (id . head) clause ... template)
+  (define-syntax id
+    (syntax-parser
+      [(_ . head) clause ... #'template])))
 
-(define-syntax-rule (lambda~>> . body)
-  (lambda (x) (~>> x . body)))
+(define-simple-macro (lambda~> . body)
+  #:with arr-expr (adjust-outer-context this-syntax #'(~> x . body) this-syntax)
+  (lambda (x) arr-expr))
 
-(define-syntax-rule (lambda~>* . body)
-  (lambda x (~> x . body)))
+(define-simple-macro (lambda~>> . body)
+  #:with arr-expr (adjust-outer-context this-syntax #'(~>> x . body) this-syntax)
+  (lambda (x) arr-expr))
 
-(define-syntax-rule (lambda~>>* . body)
-  (lambda x (~>> x . body)))
+(define-simple-macro (lambda~>* . body)
+  #:with arr-expr (adjust-outer-context this-syntax #'(~> x . body) this-syntax)
+  (lambda x arr-expr))
 
-(define-syntax-rule (lambda-and~> . body)
-  (lambda (x) (and~> x . body)))
+(define-simple-macro (lambda~>>* . body)
+  #:with arr-expr (adjust-outer-context this-syntax #'(~>> x . body) this-syntax)
+  (lambda x arr-expr))
 
-(define-syntax-rule (lambda-and~>> . body)
-  (lambda (x) (and~>> x . body)))
+(define-simple-macro (lambda-and~> . body)
+  #:with arr-expr (adjust-outer-context this-syntax #'(and~> x . body) this-syntax)
+  (lambda (x) arr-expr))
 
-(define-syntax-rule (lambda-and~>* . body)
-  (lambda x (and~> x . body)))
+(define-simple-macro (lambda-and~>> . body)
+  #:with arr-expr (adjust-outer-context this-syntax #'(and~>> x . body) this-syntax)
+  (lambda (x) arr-expr))
 
-(define-syntax-rule (lambda-and~>>* . body)
-  (lambda x (and~>> x . body)))
+(define-simple-macro (lambda-and~>* . body)
+  #:with arr-expr (adjust-outer-context this-syntax #'(and~> x . body) this-syntax)
+  (lambda x arr-expr))
+
+(define-simple-macro (lambda-and~>>* . body)
+  #:with arr-expr (adjust-outer-context this-syntax #'(and~>> x . body) this-syntax)
+  (lambda x arr-expr))
