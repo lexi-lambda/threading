@@ -328,7 +328,7 @@ Like @racket[lambda~>], but uses @racket[~>>] instead of @racket[~>].}
 
 @deftogether[(@defform[(lambda~>* clause ...)]
               @defform[(λ~>* clause ...)])]{
-Equivalent to @racket[(λ args (~> args clause ...))].
+Equivalent to @racket[(λ args (~>* args clause ...))].
 
 @(examples
   #:eval (threading-eval)
