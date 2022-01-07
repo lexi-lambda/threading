@@ -1,6 +1,8 @@
 #lang scribble/manual
 
 @(require (for-label racket/base
+                     racket/function
+                     racket/list
                      racket/math
                      threading)
           scribble/eval)
@@ -23,8 +25,6 @@ different purposes, but the most basic version is @racket[~>].
 @; ---------------------------------------------------------------------------------------------------
 
 @section{Guide}
-
-@subsection{Introduction}
 
 Threading macros are used to take a value and “thread” it through a series of transformations to
 produce a new value. In their simplest forms, they are just convenient syntax for function
@@ -218,7 +218,7 @@ Arguments can be provided to @racket[lambda~>], just like @racket[~>]:
    5))
 
 In addition to @racket[lambda~>], there is @racket[lambda~>>], as well as @racket[lambda-and~>] and
-its counterpart. All of these forms also have shorthand aliases using λ, such as @racket[λ~>].
+its counterpart. All of these forms also have shorthand aliases using @tt{λ}, such as @racket[λ~>].
 
 Finally, each threading lambda form has an additional counterpart that accepts any number of arguments
 as a list instead of just taking a single argument:
