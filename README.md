@@ -1,4 +1,4 @@
-# threading [![Build Status](https://travis-ci.org/lexi-lambda/threading.svg?branch=master)](https://travis-ci.org/lexi-lambda/threading)
+# threading [![Build Status](https://img.shields.io/github/workflow/status/lexi-lambda/threading/build/master)](https://github.com/lexi-lambda/threading/actions/workflows/build.yml) [![Scribble Docs](https://img.shields.io/badge/docs-built-blue)][threading-doc]
 
 This package implements threading macros for Racket.
 
@@ -19,6 +19,6 @@ $ raco pkg install threading
 96
 ```
 
-For more information, see [the documentation][gh-pages].
+For more information, see [the documentation][threading-doc].
 
-[gh-pages]: http://lexi-lambda.github.io/threading/threading.html
+[threading-doc]: http://lexi-lambda.github.io/threading/
