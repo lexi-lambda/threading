@@ -2,7 +2,7 @@
 
 (require (for-syntax racket/base
                      racket/list
-                     syntax/parse))
+                     syntax/parse/pre))
 
 (provide ~> ~>> and~> and~>> _
          lambda~> lambda~>> lambda~>* lambda~>>*
