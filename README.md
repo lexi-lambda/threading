@@ -1,4 +1,4 @@
-# threading [![Build Status](https://img.shields.io/github/workflow/status/lexi-lambda/threading/build/master)](https://github.com/lexi-lambda/threading/actions/workflows/build.yml) [![Scribble Docs](https://img.shields.io/badge/docs-built-blue)][threading-doc]
+# threading [![Build Status](https://img.shields.io/github/actions/workflow/status/lexi-lambda/threading/build.yml?branch=master)](https://github.com/lexi-lambda/threading/actions/workflows/build.yml) [![Scribble Docs](https://img.shields.io/badge/docs-built-blue)][threading-doc]
 
 This package implements threading macros for Racket.
 
