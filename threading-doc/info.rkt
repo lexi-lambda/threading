@@ -1,6 +1,6 @@
 #lang info
 
-(define version "1.2")
+(define version "1.3")
 
 (define license 'ISC)
 
@@ -12,4 +12,4 @@
   '("base"
     "racket-doc"
     "scribble-lib"
-    "threading-lib"))
+    ["threading-lib" #:version "1.3"]))

@@ -13,6 +13,8 @@
                         racket/list
                         racket/math)))
 
+@(define ooo (racketmetafont "..."))
+
 @title{Threading Macros}
 
 @defmodule[threading]
@@ -65,7 +67,7 @@ Note how the data flows from top to bottom in an orderly manner. Also note how s
 provided to @racket[~>] are contained within parentheses, while others are not. When no extra
 arguments are provided to a function, the parentheses may be elided.
 
-@subsection{How @racket[~>] works}
+@subsection[#:tag "how-it-works"]{How @racket[~>] works}
 
 To understand better what is happening when @racket[~>] is used, remember that it is just a macro, and
 it is actually expanding precisely to the original unthreaded example. Each step of the pipeline is
@@ -233,26 +235,31 @@ as a list instead of just taking a single argument:
 
 @section{Reference}
 
-@defform[#:literals (_)
-         (~> expr clause ...)
+@(define datum-clause @racket[(quote @#,racket[_datum])])
+
+@defform[#:literals (_ quote)
+         (~> form clause ...)
          #:grammar
          ([clause bare-id
-                  (fn-expr arg-expr ...)
-                  (fn-expr pre-expr ... hole-marker post-expr ...)]
-          [hole-marker _])]{
-“Threads” the @racket[expr] through the @racket[clause] expressions, from top to bottom. If a
-@racket[clause] is a @racket[bare-id], then the clause is transformed into the form
-@racket[(bare-id)] before threading. If the clause is a function application without a
-@racket[hole-marker], it is transformed into a function application with the @racket[hole-marker]
-placed immediately after the @racket[fn-expr].
+                  #,datum-clause
+                  (head arg ...)
+                  (pre ... _ post ...)])]{
+“Threads” @racket[form] through each @racket[clause], from top to bottom, as
+described in @secref["how-it-works"]. More precisely, @racket[~>] expands
+according to the following rules:
 
-As a special case, clauses of the form @racket['datum] are treated as if they were @racket[('datum)]
-so the threaded value is inserted @emph{outside} the @racket[quote] form. This isn't useful (or
-harmful) in the Racket language, but it may be be useful in other languages with a modified
-@racket[#%app].
+@itemlist[
+ #:style 'compact
+ @item{@racket[(~> form)] expands to simply @racket[form].}
+ @item{@racket[(~> form bare-id)] expands to @racket[(bare-id form)].}
+ @item{@racket[(~> form #,datum-clause)] expands to @racket[(#,datum-clause form)].}
+ @item{@racket[(~> form (head arg #,ooo))] expands to @racket[(head form arg #,ooo)]}
+ @item{@racket[(~> form (pre #,ooo _ post #,ooo))] expands to @racket[(pre #,ooo form post #,ooo)].}
+ @item{@racket[(~> form _clause1 _clause2 #,ooo)] expands to @racket[(~> (~> form _clause1) _clause2 #,ooo)].}]
 
-Once the initial transformation has been completed, the @racket[expr] is threaded through the clauses
-by nesting it within each clause, replacing the hole marker.
+The special treatment of @datum-clause clauses is unlikely to be useful to
+programs written in @hash-lang[]@|~|@racketmodname[racket], but it may be useful
+in languages that provide an alternate binding for @racket[#%app].
 
 @(examples
   #:eval (threading-eval)
@@ -264,17 +271,22 @@ by nesting it within each clause, replacing the hole marker.
       string->bytes/utf-8
       bytes->list
       (map (curry * 2) _)
-      list->bytes))}
+      list->bytes))
+
+@history[#:changed "1.3" @elem{Removed the restriction that at least one
+           @racket[pre] form must be present in a @racket[clause] containing
+           @racket[_].}]}
 
 @defform[#:literals (_)
-         (~>> expr clause ...)
+         (~>> form clause ...)
          #:grammar
          ([clause bare-id
-                  (fn-expr arg-expr ...)
-                  (fn-expr pre-expr ... hole-marker post-expr ...)]
-          [hole-marker _])]{
-Works equivalently to @racket[~>] except that when no @racket[hole-marker] is provided, the insertion
-point is at the @emph{end}, just after the final @racket[arg-expr].
+                  'datum
+                  (head arg ...)
+                  (pre ... _ post ...)])]{
+Equivalent to @racket[~>], except that @racket[form] is inserted at the
+@emph{end} of a clause of the form @racket[(head arg #,ooo)], rather than between
+the @racket[head] and @racket[arg] forms.
 
 @(examples
   #:eval (threading-eval)
@@ -286,11 +298,15 @@ point is at the @emph{end}, just after the final @racket[arg-expr].
        string->bytes/utf-8
        bytes->list
        (map (curry * 2))
-       list->bytes))}
+       list->bytes))
+
+@history[#:changed "1.3" @elem{Removed the restriction that at least one
+           @racket[pre] form must be present in a @racket[clause] containing
+           @racket[_].}]}
 
 @defform[(and~> expr clause ...)]{
 Works like @racket[~>], but if any of the intermediate expressions returns @racket[#f], threading
-stops, and the result of the whole expression is @racket[#f]. Like @racket[and], this is
+stops, and the result of the whole expression is @racket[#f]. Like @racket[and], @racket[and~>] is
 short-circuiting, so the remaining steps will not be evaluated.
 
 @(examples
@@ -316,7 +332,7 @@ Combines the threading behavior of @racket[~>>] and the short-circuiting behavio
 
 @deftogether[(@defform[(lambda~> clause ...)]
               @defform[(λ~> clause ...)])]{
-Equivalent to @racket[(λ (arg) (~> arg clause ...))].
+Equivalent to @racket[(λ (x) (~> x clause #,ooo))].
 
 @(examples
   #:eval (threading-eval)
@@ -328,7 +344,7 @@ Like @racket[lambda~>], but uses @racket[~>>] instead of @racket[~>].}
 
 @deftogether[(@defform[(lambda~>* clause ...)]
               @defform[(λ~>* clause ...)])]{
-Equivalent to @racket[(λ args (~> args clause ...))].
+Equivalent to @racket[(λ args (~> args clause #,ooo))].
 
 @(examples
   #:eval (threading-eval)

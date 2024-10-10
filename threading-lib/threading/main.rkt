@@ -12,114 +12,94 @@
                      [lambda-and~> λ-and~>] [lambda-and~>> λ-and~>>]
                      [lambda-and~>* λ-and~>*] [lambda-and~>>* λ-and~>>*]))
 
-; Adjusts the lexical context of the outermost piece of a syntax object;
-; i.e. changes the context of a syntax pair but not its contents.
-(define-for-syntax (adjust-outer-context ctx stx [srcloc #f])
-  (datum->syntax ctx (syntax-e stx) srcloc))
-
 (begin-for-syntax
-  (define-syntax-class clause
-    #:literals (_ quote)
-    #:attributes (call insertion-point)
-    (pattern
-     id:id
-     #:with call #'(id)
-     #:attr insertion-point 0)
-    (pattern
-     'term
-     #:with call #'('term)
-     #:attr insertion-point 0)
-    (pattern
-     (head:expr pre ... _ post ...)
-     #:with call #'(head pre ... post ...)
-     #:attr insertion-point (length (syntax->list #'(pre ...))))
-    (pattern
-     (head:expr arg ...)
-     #:with call #'(head arg ...)
-     #:attr insertion-point #f)))
+  (define (build-insert #:pre pre-stxs
+                        #:post post-stxs
+                        #:context ctxt
+                        #:props props)
+    (λ (e-stx)
+      (datum->syntax ctxt
+                     (append pre-stxs (cons e-stx post-stxs))
+                     ctxt
+                     props)))
 
-(define-syntaxes (~> ~>> and~> and~>>)
-  (values
-   (syntax-parser
-     [(_ ex:expr) #'ex]
-     [(_ ex:expr cl:clause remaining:clause ...)
-      #:do [(define call (syntax->list #'cl.call))
-            (define-values (pre post)
-              (split-at call (add1 (or (attribute cl.insertion-point) 0))))]
-      #:with [pre ...] pre
-      #:with [post ...] post
-      #:with app/ctx (adjust-outer-context this-syntax #'(pre ... ex post ...) #'cl)
-      (adjust-outer-context this-syntax #'(~> app/ctx remaining ...) this-syntax)])
-   (syntax-parser
-     [(_ ex:expr) #'ex]
-     [(_ ex:expr cl:clause remaining:clause ...)
-      #:do [(define call (syntax->list #'cl.call))
-            (define-values (pre post)
-              (split-at call (add1 (or (attribute cl.insertion-point)
-                                       (sub1 (length call))))))]
-      #:with [pre ...] pre
-      #:with [post ...] post
-      #:with app/ctx (adjust-outer-context this-syntax #'(pre ... ex post ...) #'cl)
-      (adjust-outer-context this-syntax #'(~>> app/ctx remaining ...) this-syntax)])
-   (syntax-parser
-     [(_ ex:expr) #'ex]
-     [(_ ex:expr cl:clause remaining:clause ...)
-      #:do [(define call (syntax->list #'cl.call))
-            (define-values (pre post)
-              (split-at call (add1 (or (attribute cl.insertion-point) 0))))]
-      #:with [pre ...] pre
-      #:with [post ...] post
-      #:with app/ctx (adjust-outer-context this-syntax #'(pre ... v post ...) #'cl)
-      #:with body/ctx (adjust-outer-context this-syntax #'(and~> app/ctx remaining ...) this-syntax)
-      #'(let ([v ex])
-          (and v body/ctx))])
-   (syntax-parser
-     [(_ ex:expr) #'ex]
-     [(_ ex:expr cl:clause remaining:clause ...)
-      #:do [(define call (syntax->list #'cl.call))
-            (define-values (pre post)
-              (split-at call (add1 (or (attribute cl.insertion-point)
-                                       (sub1 (length call))))))]
-      #:with [pre ...] pre
-      #:with [post ...] post
-      #:with app/ctx (adjust-outer-context this-syntax #'(pre ... v post ...) #'cl)
-      #:with body/ctx (adjust-outer-context this-syntax #'(and~>> app/ctx remaining ...) this-syntax)
-      #'(let ([v ex])
-          (and v body/ctx))])))
+  (define-syntax-class (clause mode) ; mode : (or/c '~> '~>>)
+    #:literals [_ quote]
+    #:attributes [insert] ; insert : (-> syntax? syntax?)
+    (pattern {~or {~var _ id}
+                  (quote term)}
+      #:attr insert (build-insert #:pre (list this-syntax)
+                                  #:post '()
+                                  #:context this-syntax
+                                  #:props #f))
+    (pattern (pre ... _ post ...)
+      #:attr insert (build-insert #:pre (attribute pre)
+                                  #:post (attribute post)
+                                  #:context this-syntax
+                                  #:props this-syntax))
+    (pattern (term ...+)
+      #:do [(define-values [pre post]
+              (if (eq? mode '~>)
+                  (split-at (attribute term) 1)
+                  (values (attribute term) '())))]
+      #:attr insert (build-insert #:pre pre
+                                  #:post post
+                                  #:context this-syntax
+                                  #:props this-syntax))))
 
-(define-syntax-rule (define-simple-macro (id . head) clause ... template)
-  (define-syntax id
-    (syntax-parser
-      [(_ . head) clause ... #'template])))
+(define-syntaxes [~> ~>>]
+  (let ()
+    (define (make mode)
+      (syntax-parser
+        [(_ e:expr) #'e]
+        [(head e:expr {~var c (clause mode)} rest ...)
+         (datum->syntax
+          this-syntax
+          (list* #'head ((attribute c.insert) #'e) (attribute rest))
+          this-syntax
+          this-syntax)]))
 
-(define-simple-macro (lambda~> . body)
-  #:with arr-expr (adjust-outer-context this-syntax #'(~> x . body) this-syntax)
-  (lambda (x) arr-expr))
+    (values (make '~>) (make '~>>))))
 
-(define-simple-macro (lambda~>> . body)
-  #:with arr-expr (adjust-outer-context this-syntax #'(~>> x . body) this-syntax)
-  (lambda (x) arr-expr))
+(define-syntaxes [and~> and~>>]
+  (let ()
+    (define (make mode)
+      (syntax-parser
+        [(_ e:expr) #'e]
+        [(head e:expr {~var c (clause mode)} rest ...)
+         (quasisyntax/loc this-syntax
+           (let ([tmp e])
+             (and tmp
+                  #,(datum->syntax
+                     this-syntax
+                     (list* #'head
+                            ((attribute c.insert) #'tmp)
+                            (attribute rest))
+                     this-syntax
+                     this-syntax))))]))
 
-(define-simple-macro (lambda~>* . body)
-  #:with arr-expr (adjust-outer-context this-syntax #'(~> x . body) this-syntax)
-  (lambda x arr-expr))
+    (values (make '~>) (make '~>>))))
 
-(define-simple-macro (lambda~>>* . body)
-  #:with arr-expr (adjust-outer-context this-syntax #'(~>> x . body) this-syntax)
-  (lambda x arr-expr))
+(define-syntaxes [lambda~> lambda~>> lambda-and~> lambda-and~>>]
+  (let ()
+    (define (make ~>-id)
+      (syntax-parser
+        [(_ . body)
+         (quasisyntax/loc this-syntax
+           (lambda (x)
+             #,(quasisyntax/loc this-syntax
+                 (#,~>-id x . body))))]))
 
-(define-simple-macro (lambda-and~> . body)
-  #:with arr-expr (adjust-outer-context this-syntax #'(and~> x . body) this-syntax)
-  (lambda (x) arr-expr))
+    (values (make #'~>) (make #'~>>) (make #'and~>) (make #'and~>>))))
 
-(define-simple-macro (lambda-and~>> . body)
-  #:with arr-expr (adjust-outer-context this-syntax #'(and~>> x . body) this-syntax)
-  (lambda (x) arr-expr))
+(define-syntaxes [lambda~>* lambda~>>* lambda-and~>* lambda-and~>>*]
+  (let ()
+    (define (make ~>-id)
+      (syntax-parser
+        [(_ . body)
+         (quasisyntax/loc this-syntax
+           (lambda args
+             #,(quasisyntax/loc this-syntax
+                 (#,~>-id args . body))))]))
 
-(define-simple-macro (lambda-and~>* . body)
-  #:with arr-expr (adjust-outer-context this-syntax #'(and~> x . body) this-syntax)
-  (lambda x arr-expr))
-
-(define-simple-macro (lambda-and~>>* . body)
-  #:with arr-expr (adjust-outer-context this-syntax #'(and~>> x . body) this-syntax)
-  (lambda x arr-expr))
+    (values (make #'~>) (make #'~>>) (make #'and~>) (make #'and~>>))))
