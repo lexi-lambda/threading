@@ -12,4 +12,6 @@
 (define build-deps
   '())
 
-(define implies deps)
+(define implies
+  '("threading-doc"
+    "threading-lib"))
