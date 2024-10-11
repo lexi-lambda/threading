@@ -1,14 +1,14 @@
 #lang info
 
-(define version "1.3")
+(define version "2.0")
 
 (define license 'ISC)
 
 (define collection 'multi)
 
 (define deps
-  '(["threading-doc" #:version "1.3"]
-    ["threading-lib" #:version "1.3"]))
+  '(["threading-doc" #:version "2.0"]
+    ["threading-lib" #:version "2.0"]))
 (define build-deps
   '())
 
