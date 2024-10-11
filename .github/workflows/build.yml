@@ -28,7 +28,7 @@ jobs:
       run: |
         set -e
         scribble +m --redirect https://docs.racket-lang.org/local-redirect/index.html \
-          --dest docs --dest-name index threading-doc/scribblings/threading.scrbl
+          --htmls --dest-name docs threading-doc/scribblings/threading.scrbl
         cd docs
         git init -b gh-pages
         git config user.name 'GitHub Actions'

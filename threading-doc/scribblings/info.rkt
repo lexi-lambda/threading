@@ -1,3 +1,3 @@
 #lang info
 
-(define scribblings '(["threading.scrbl"]))
+(define scribblings '(["threading.scrbl" (multi-page)]))
